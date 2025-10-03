@@ -64,5 +64,8 @@ public class MainActivity extends AppCompatActivity {
         if (petManager != null) {
             petManager.stop();
         }
+        if (uiUpdaterThread != null) {
+            uiUpdaterThread.interrupt();
+        }
     }
 }
