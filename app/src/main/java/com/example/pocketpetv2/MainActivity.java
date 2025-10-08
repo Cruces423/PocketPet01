@@ -3,6 +3,9 @@ import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.pocketpetv2.databinding.ActivityMainBinding;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Settings;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,10 +47,21 @@ public class MainActivity extends AppCompatActivity {
         });
         uiUpdaterThread.start();
 
-        // Button logic
-        binding.buttonDeploy.setOnClickListener(v ->
-                Toast.makeText(this, "Deploy clicked", Toast.LENGTH_SHORT).show()
-        );
+        //buttons
+
+        binding.buttonDeploy.setOnClickListener(v -> {
+            if (android.provider.Settings.canDrawOverlays(this)) {
+                Intent overlayIntent = new Intent(this, OverlayService.class);
+                startService(overlayIntent);
+            } else {
+                // Ask user for permission
+                Intent settingsIntent = new Intent(
+                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:" + getPackageName())
+                );
+                startActivity(settingsIntent);
+            }
+        });
 
         binding.buttonCustomize.setOnClickListener(v ->
                 Toast.makeText(this, "Customize clicked", Toast.LENGTH_SHORT).show()
