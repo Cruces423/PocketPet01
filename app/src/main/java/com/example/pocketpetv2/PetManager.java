@@ -3,8 +3,10 @@ public class PetManager implements Runnable {
 
     public enum State {
         IDLE,
-        ACTIVE,
-        SLEEP
+        FALLING_LEFT,
+        FALLING_RIGHT,
+        SMACK_LEFT,
+        SMACK_RIGHT
     }
 
     private volatile State currentState = State.IDLE;
@@ -27,16 +29,19 @@ public class PetManager implements Runnable {
         while (running) {
             switch (currentState) {
                 case IDLE:
-                    // Do idle logic
                     System.out.println("Pet is idle...");
                     break;
-                case ACTIVE:
-                    // Do active logic
-                    System.out.println("Pet is active!");
+                case FALLING_LEFT:
+                    System.out.println("Pet is falling left!");
                     break;
-                case SLEEP:
-                    // Do sleep logic
-                    System.out.println("Pet is sleeping...");
+                case FALLING_RIGHT:
+                    System.out.println("Pet is falling right!");
+                    break;
+                case SMACK_LEFT:
+                    System.out.println("Pet is hit the left wall!");
+                    break;
+                case SMACK_RIGHT:
+                    System.out.println("Pet is hit the right wall!");
                     break;
             }
 

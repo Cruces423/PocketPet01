@@ -1,18 +1,28 @@
 package com.example.pocketpetv2;
-import android.os.Bundle;
-import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
-import com.example.pocketpetv2.databinding.ActivityMainBinding;
+
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
+// 1. CORRECTED IMPORT: Use the Android OS Handler
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
+import android.widget.ImageView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import com.example.pocketpetv2.databinding.ActivityMainBinding;
+
+// REMOVED: java.util.logging.Handler is not needed
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private PetManager petManager;
     private Thread petManagerThread;
-    private Thread uiUpdaterThread;
+    // This variable is no longer needed if using view binding correctly
+    // private ImageView petStateImageView;
+    private Handler uiHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,35 +39,16 @@ public class MainActivity extends AppCompatActivity {
         petManagerThread = new Thread(petManager);
         petManagerThread.start();
 
-        // Update UI periodically to show current state
-        uiUpdaterThread = new Thread(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(1000); // update once per second
-                } catch (InterruptedException e) {
-                    return; // exit thread if interrupted
-                }
-
-                runOnUiThread(() -> {
-                    if (petManager != null) {
-                        binding.mainText.setText("Current State: " + petManager.getState().name());
-                    }
-                });
-            }
-        });
-        uiUpdaterThread.start();
-
         //buttons
-
         binding.buttonDeploy.setOnClickListener(v -> {
-            if (android.provider.Settings.canDrawOverlays(this)) {
+            if (Settings.canDrawOverlays(this)) {
                 Intent overlayIntent = new Intent(this, OverlayService.class);
                 startService(overlayIntent);
             } else {
                 // Ask user for permission
                 Intent settingsIntent = new Intent(
-                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        android.net.Uri.parse("package:" + getPackageName())
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName())
                 );
                 startActivity(settingsIntent);
             }
@@ -72,14 +63,69 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    private final Runnable updateImageRunnable = new Runnable() {
+        @Override
+        public void run() {
+            PetManager.State currentState = petManager.getState();
+            int imageResource = R.drawable.gator_idle01; // Default image
+
+            switch (currentState) {
+                case IDLE:
+                    imageResource = R.drawable.gator_idle01;
+                    break;
+                case FALLING_LEFT:
+                    imageResource = R.drawable.gator_fall_horizontal_left;
+                    break;
+                case FALLING_RIGHT:
+                    imageResource = R.drawable.gator_fall_horizontal_right;
+                    break;
+                case SMACK_LEFT:
+                    imageResource = R.drawable.gator_wallsmack_left;
+                    break;
+                case SMACK_RIGHT:
+                    imageResource = R.drawable.gator_wallsmack_right;
+                    break;
+            }
+            // 2. CORRECTED: Use the binding object to access the ImageView
+            if (binding != null) {
+                // Assuming the ID of your ImageView in XML is 'pet_state_image_view'
+                binding.petStateImageView.setImageResource(imageResource);
+            }
+
+            // Schedule the next update.
+            uiHandler.postDelayed(this, 500);
+        }
+    }; // The Runnable definition ends here
+
+    // 3. MOVED: onResume is a method of MainActivity, not the Runnable
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Start updating the image when the activity is visible
+        uiHandler.post(updateImageRunnable);
+    }
+
+    // 4. MOVED: onPause is a method of MainActivity, not the Runnable
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop updating when the activity is not visible to save resources
+        uiHandler.removeCallbacks(updateImageRunnable);
+    }
+
+    // 5. MOVED: onDestroy is a method of MainActivity, not the Runnable
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Cleanly stop the PetManager thread
         if (petManager != null) {
             petManager.stop();
         }
-        if (uiUpdaterThread != null) {
-            uiUpdaterThread.interrupt();
+        if (petManagerThread != null) {
+            // 6. CORRECTED: Use the correct variable name
+            petManagerThread.interrupt();
         }
+        // Set binding to null to avoid memory leaks
+        binding = null;
     }
 }
