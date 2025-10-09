@@ -3,26 +3,21 @@ package com.example.pocketpetv2;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-// 1. CORRECTED IMPORT: Use the Android OS Handler
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.pocketpetv2.databinding.ActivityMainBinding;
 
-// REMOVED: java.util.logging.Handler is not needed
+import com.example.pocketpetv2.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private PetManager petManager;
     private Thread petManagerThread;
-    // This variable is no longer needed if using view binding correctly
-    // private ImageView petStateImageView;
-    private Handler uiHandler = new Handler(Looper.getMainLooper());
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +34,11 @@ public class MainActivity extends AppCompatActivity {
         petManagerThread = new Thread(petManager);
         petManagerThread.start();
 
-        //buttons
+        // Setup button listeners
+        setupButtons();
+    }
+
+    private void setupButtons() {
         binding.buttonDeploy.setOnClickListener(v -> {
             if (Settings.canDrawOverlays(this)) {
                 Intent overlayIntent = new Intent(this, OverlayService.class);
@@ -61,11 +60,21 @@ public class MainActivity extends AppCompatActivity {
         binding.buttonSettings.setOnClickListener(v ->
                 Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show()
         );
+
+        // The exit button from your layout
+        binding.buttonExit.setOnClickListener(v -> finish());
+
+        // The pet name button from your layout
+        binding.buttonPetName.setOnClickListener(v ->
+                Toast.makeText(this, "Pet name clicked", Toast.LENGTH_SHORT).show()
+        );
     }
 
     private final Runnable updateImageRunnable = new Runnable() {
         @Override
         public void run() {
+            if (petManager == null || binding == null) return;
+
             PetManager.State currentState = petManager.getState();
             int imageResource = R.drawable.gator_idle01; // Default image
 
@@ -86,46 +95,37 @@ public class MainActivity extends AppCompatActivity {
                     imageResource = R.drawable.gator_wallsmack_right;
                     break;
             }
-            // 2. CORRECTED: Use the binding object to access the ImageView
-            if (binding != null) {
-                // Assuming the ID of your ImageView in XML is 'pet_state_image_view'
-                binding.petStateImageView.setImageResource(imageResource);
-            }
+            binding.petStateImageView.setImageResource(imageResource);
 
-            // Schedule the next update.
+            // Keep the image update loop running
             uiHandler.postDelayed(this, 500);
         }
-    }; // The Runnable definition ends here
+    };
 
-    // 3. MOVED: onResume is a method of MainActivity, not the Runnable
     @Override
     protected void onResume() {
         super.onResume();
-        // Start updating the image when the activity is visible
+        // Start the UI update runnable when the app is visible
         uiHandler.post(updateImageRunnable);
     }
 
-    // 4. MOVED: onPause is a method of MainActivity, not the Runnable
     @Override
     protected void onPause() {
         super.onPause();
-        // Stop updating when the activity is not visible to save resources
+        // Stop the UI update runnable when the app is not visible to save resources
         uiHandler.removeCallbacks(updateImageRunnable);
     }
 
-    // 5. MOVED: onDestroy is a method of MainActivity, not the Runnable
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Cleanly stop the PetManager thread
+        // Clean up resources
         if (petManager != null) {
             petManager.stop();
         }
         if (petManagerThread != null) {
-            // 6. CORRECTED: Use the correct variable name
             petManagerThread.interrupt();
         }
-        // Set binding to null to avoid memory leaks
         binding = null;
     }
 }

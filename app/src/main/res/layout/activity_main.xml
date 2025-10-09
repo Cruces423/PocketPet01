@@ -11,8 +11,8 @@
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center"
+        android:orientation="horizontal"
         android:padding="16dp"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -20,8 +20,8 @@
             android:id="@+id/button_exit"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_margin="3dp"
+            android:layout_weight="1"
             android:text="@string/exit" />
         <Space
             android:layout_width="0dp"
@@ -34,36 +34,56 @@
 
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/pet_state_image_view"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:contentDescription="@string/app_name"
-        app:layout_constraintBottom_toTopOf="@+id/bottom_buttons"
-        app:layout_constraintEnd_toEndOf="parent"
+    <FrameLayout
+        android:id="@+id/pet_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:src="@drawable/gator_idle01" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/top_bar"
+        app:layout_constraintBottom_toTopOf="@id/pet_name_container">
 
+        <!-- Use a nested ConstraintLayout for percentage-based sizing -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/pet_state_image_view"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/app_name"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHeight_percent="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.5"
+                tools:src="@drawable/gator_idle01" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </FrameLayout>
+
+
+
+    <!-- MODIFIED: Gave the name button's container an ID for better constraints -->
     <LinearLayout
+        android:id="@+id/pet_name_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="84dp"
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        tools:layout_editor_absoluteX="0dp">
+        app:layout_constraintBottom_toTopOf="@id/bottom_buttons" >
 
         <Button
             android:id="@+id/button_pet_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            android:text="@string/pet_name"
-            app:layout_constraintBottom_toTopOf="@id/bottom_buttons"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            android:text="@string/pet_name" />
 
     </LinearLayout>
 
@@ -71,8 +91,8 @@
         android:id="@+id/bottom_buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center"
+        android:orientation="horizontal"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -80,24 +100,24 @@
             android:id="@+id/button_deploy"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_margin="3dp"
+            android:layout_weight="1"
             android:text="@string/deploy"/>
 
         <Button
             android:id="@+id/button_customize"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_margin="3dp"
+            android:layout_weight="1"
             android:text="@string/customize"/>
 
         <Button
             android:id="@+id/button_settings"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_margin="3dp"
+            android:layout_weight="1"
             android:text="@string/settings"/>
     </LinearLayout>
 
