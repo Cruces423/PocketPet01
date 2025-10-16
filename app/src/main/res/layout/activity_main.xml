@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="8dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <Button
@@ -25,11 +25,11 @@
             android:text="@string/exit" />
         <Space
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_weight="1"/>
         <Space
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_weight="1"/>
 
     </LinearLayout>
@@ -50,17 +50,13 @@
 
             <ImageView
                 android:id="@+id/pet_state_image_view"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:adjustViewBounds="true"
-                android:contentDescription="@string/app_name"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHeight_percent="0.5"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:src="@drawable/gator_idle01"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.5"
-                tools:src="@drawable/gator_idle01" />
+                android:scaleType="fitCenter" /> <!-- Optional but Recommended -->
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -75,14 +71,14 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="8dp"
         app:layout_constraintBottom_toTopOf="@id/bottom_buttons" >
 
         <Button
             android:id="@+id/button_pet_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
+            android:layout_margin="3dp"
             android:text="@string/pet_name" />
 
     </LinearLayout>
@@ -93,7 +89,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <Button
