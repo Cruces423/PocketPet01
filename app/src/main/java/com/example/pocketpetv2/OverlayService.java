@@ -20,7 +20,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
-// MODIFIED: Implement SensorEventListener
 public class OverlayService extends Service implements SensorEventListener {
 
     private WindowManager windowManager;
@@ -28,14 +27,12 @@ public class OverlayService extends Service implements SensorEventListener {
     private GestureDetector gestureDetector;
     private WindowManager.LayoutParams params;
 
-    // --- Variables for drag functionality ---
     private int initialX;
     private int initialY;
     private float initialTouchX;
     private float initialTouchY;
-    private boolean isDragging = false; // <-- NEW: Track drag state
+    private boolean isDragging = false;
 
-    // --- NEW: Variables for gravity functionality ---
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Handler gravityHandler = new Handler();
@@ -152,8 +149,6 @@ public class OverlayService extends Service implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        // Update sensor values. The signs are adjusted to map sensor coordinates
-        // to screen coordinates correctly.
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             sensorX = -event.values[0];
             sensorY = event.values[1];
@@ -168,14 +163,10 @@ public class OverlayService extends Service implements SensorEventListener {
     private final Runnable gravityRunnable = new Runnable() {
         @Override
         public void run() {
-            // Only apply gravity if the user is not dragging the overlay
             if (!isDragging) {
-                // Adjust position based on sensor data (gravity)
-                // The multiplier (e.g., 2.0f) controls the "speed" of the fall
                 params.x += (int) (sensorX * 1.5f);
                 params.y += (int) (sensorY * 1.5f);
 
-                // --- Boundary checks to keep the view on screen ---
                 int viewWidth = overlayView.getWidth();
                 int viewHeight = overlayView.getHeight();
 

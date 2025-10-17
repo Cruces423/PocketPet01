@@ -1,6 +1,5 @@
 package com.example.pocketpetv2;
 
-// import java.util.logging.Handler; // <-- REMOVED THIS LINE
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,38 +19,27 @@ public class PetManager implements Runnable {
     private volatile boolean running = true;
     private final Handler stateHandler = new Handler(Looper.getMainLooper());
 
-    // FIX 2: Added the 'synchronized' keyword
     public synchronized void setState(State newState) {
-        // --- START OF NEW LOGIC ---
 
-        // Prevent invalid state transitions that cause flickering
         if (currentState == State.SMACK_RIGHT && newState == State.FALLING_RIGHT) {
-            return; // Ignore this change
+            return;
         }
         if (currentState == State.SMACK_LEFT && newState == State.FALLING_LEFT) {
-            return; // Ignore this change
+            return;
         }
-
-        // If we are currently in a smack state and the new state is IDLE, don't change immediately.
-        // Let the timed "recovery" handle it.
         if ((currentState == State.SMACK_LEFT || currentState == State.SMACK_RIGHT) && newState == State.IDLE) {
             return;
         }
         if (newState == State.IDLE) {
             stateHandler.removeCallbacksAndMessages(null);
         }
-        // If the new state is a smack, set it and then schedule a recovery back to IDLE
         if (newState == State.SMACK_LEFT || newState == State.SMACK_RIGHT) {
-            // Cancel any previously scheduled recovery
             stateHandler.removeCallbacksAndMessages(null);
             this.currentState = newState;
-            // Schedule a transition back to IDLE after a short delay
             stateHandler.postDelayed(() -> setState(State.IDLE), 300); // Recover after 300ms
         } else {
-            // For any other state change, just apply it directly
             this.currentState = newState;
         }
-        // --- END OF NEW LOGIC ---
     }
 
     public State getState() {
@@ -67,8 +55,6 @@ public class PetManager implements Runnable {
     @Override
     public void run() {
         while (running) {
-            // This loop is mostly for debugging now or future complex passive behaviors.
-            // The System.out.println calls can be removed if not needed.
             switch (currentState) {
                 case IDLE:
                     System.out.println("Pet is idle...");
@@ -91,16 +77,15 @@ public class PetManager implements Runnable {
             }
 
             try {
-                Thread.sleep(3000); // simulate time between updates
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                running = false; // Important to exit the loop if interrupted
+                running = false;
             }
         }
     }
-    // This method will now be called from MainActivity when the state changes
     public void updatePetVisuals(MainActivity activity, State state) {
-        int resId = R.drawable.gator_idle_left; // Default image
+        int resId = R.drawable.gator_idle_left;
         switch (state) {
             case IDLE:
                 resId = R.drawable.gator_idle_left;
@@ -127,4 +112,3 @@ public class PetManager implements Runnable {
         activity.runOnUiThread(() -> activity.updatePetImage(drawable, state));
     }
 }
-
