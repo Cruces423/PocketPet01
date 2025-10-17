@@ -1,6 +1,7 @@
 package com.example.pocketpetv2;
 
 // import java.util.logging.Handler; // <-- REMOVED THIS LINE
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -96,6 +97,34 @@ public class PetManager implements Runnable {
                 running = false; // Important to exit the loop if interrupted
             }
         }
+    }
+    // This method will now be called from MainActivity when the state changes
+    public void updatePetVisuals(MainActivity activity, State state) {
+        int resId = R.drawable.gator_idle_left; // Default image
+        switch (state) {
+            case IDLE:
+                resId = R.drawable.gator_idle_left;
+                break;
+            case FALLING_VERTICAL:
+                resId = R.drawable.gator_fall_vertical;
+                break;
+            case FALLING_LEFT:
+                resId = R.drawable.gator_fall_horizontal_left;
+                break;
+            case FALLING_RIGHT:
+                resId = R.drawable.gator_fall_horizontal_right;
+                break;
+            case SMACK_LEFT:
+                resId = R.drawable.gator_wallsmack_left;
+                break;
+            case SMACK_RIGHT:
+                resId = R.drawable.gator_wallsmack_right;
+                break;
+        }
+
+        // Get the drawable and call the new method in MainActivity
+        Drawable drawable = activity.getDrawable(resId);
+        activity.runOnUiThread(() -> activity.updatePetImage(drawable, state));
     }
 }
 

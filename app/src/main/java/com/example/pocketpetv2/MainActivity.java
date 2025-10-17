@@ -1,17 +1,18 @@
 package com.example.pocketpetv2;
 
-// FIX 1: ADDED REQUIRED IMPORTS
+// FIX1: ADDED REQUIRED IMPORTS
 import android.content.Context;
 import android.content.Intent;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
+import android.hardware.Sensor;import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener; // <-- ADD THIS
 import android.hardware.SensorManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.view.WindowInsetsController;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -21,6 +22,15 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FlingAnimation;
 
 import com.example.pocketpetv2.databinding.ActivityMainBinding;
+
+import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
+import android.widget.ImageView;
+
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import androidx.appcompat.app.AppCompatActivity;
 
 // FIX 2: IMPLEMENT THE SENSOR EVENT LISTENER INTERFACE
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
@@ -39,6 +49,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final float GRAVITY_THRESHOLD = 0.5f;
     private float maxY = Float.MAX_VALUE;
 
+    // --- NEW: Add a variable to track the last facing direction ---
+    private boolean isFacingLeft = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             getSupportActionBar().hide();
         }
         setContentView(binding.getRoot());
+
+        hideSystemUI();
 
         // Initialize State Machine
         petManager = new PetManager();
@@ -93,36 +108,73 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             // Horizontal End Listener (Collision)
             flingX.addEndListener((animation, canceled, value, velocity) -> {
-                if (value >= maxX) {
-                    petManager.setState(PetManager.State.SMACK_RIGHT);
-                } else if (value <= minX) {
-                    petManager.setState(PetManager.State.SMACK_LEFT);
+                // *** FIX: PREVENT FLICKER FROM IDLE TO SMACK ***
+                PetManager.State currentState = petManager.getState();
+                float smackVelocityThreshold = 100f; // Velocity needed to trigger a smack from idle
+
+                // Only allow a smack if the pet is NOT idle, OR if it IS idle but hits the wall hard enough.
+                if (currentState != PetManager.State.IDLE || Math.abs(velocity) > smackVelocityThreshold) {
+                    if (value >= maxX) {
+                        changePetState(PetManager.State.SMACK_RIGHT);
+                        isFacingLeft = false; // It smacked right, so it's facing left now
+                    } else if (value <= minX) {
+                        changePetState(PetManager.State.SMACK_LEFT);
+                        isFacingLeft = true; // It smacked left, so it's facing right now
+                    }
                 }
             });
 
             // Vertical End Listener (Collision)
             flingY.addEndListener((animation, canceled, value, velocity) -> {
                 // Use the CLASS VARIABLE 'this.maxY' for the check
-                if (value >= this.maxY) {
-                    petManager.setState(PetManager.State.IDLE);
+                // A small buffer to ensure it's properly on the ground
+                if (value >= this.maxY - 5f) {
+                    changePetState(PetManager.State.IDLE);
                 }
             });
 
             // Horizontal Update Listener (State Change)
             flingX.addUpdateListener((animation, value, velocity) -> {
                 float velocityThreshold = 25.0f;
-                if (velocity > velocityThreshold) {
-                    petManager.setState(PetManager.State.FALLING_RIGHT);
-                } else if (velocity < -velocityThreshold) {
-                    petManager.setState(PetManager.State.FALLING_LEFT);
+                float idleVelocityThreshold = 15.0f; // Small dead zone for velocity
+                PetManager.State currentState = petManager.getState();
+
+                // *** NEW FIX: Check if on the ground and sliding ***
+                float currentY = petStateImageView.getY();
+                boolean onGround = currentY >= this.maxY - 5f;
+
+                if (onGround && Math.abs(velocity) < idleVelocityThreshold) {
+                    changePetState(PetManager.State.IDLE);
+                    return; // Exit early, we are idle on the ground
+                }
+
+
+                if (velocity > velocityThreshold && currentState != PetManager.State.SMACK_RIGHT) {
+                    changePetState(PetManager.State.FALLING_RIGHT);
+                    isFacingLeft = false;
+                } else if (velocity < -velocityThreshold && currentState != PetManager.State.SMACK_LEFT) {
+                    changePetState(PetManager.State.FALLING_LEFT);
+                    isFacingLeft = true;
+                } else if (currentState == PetManager.State.IDLE) {
+                    // Only change facing direction if idle and velocity is significant
+                    if (velocity > idleVelocityThreshold) {
+                        isFacingLeft = false;
+                    } else if (velocity < -idleVelocityThreshold) {
+                        isFacingLeft = true;
+                    }
                 }
             });
+
 
             // Vertical Update Listener (State Change)
             flingY.addUpdateListener((animation, value, velocity) -> {
                 float velocityThreshold = 25.0f;
-                if (velocity < -velocityThreshold) {
-                    petManager.setState(PetManager.State.FALLING_VERTICAL);
+                // *** FIX: ADDED STATE CHECKS TO PREVENT FLICKERING AGAINST WALLS ***
+                PetManager.State currentState = petManager.getState();
+                boolean isSmacking = (currentState == PetManager.State.SMACK_LEFT || currentState == PetManager.State.SMACK_RIGHT);
+
+                if (velocity < -velocityThreshold && !isSmacking) {
+                    changePetState(PetManager.State.FALLING_VERTICAL);
                 }
             });
         });
@@ -160,17 +212,91 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         );
     }
 
+    private void changePetState(PetManager.State newState) {
+        // FIX: Call the PetManager's setState method, NOT itself.
+        petManager.setState(newState);
+
+        // Now call the visual update method
+        petManager.updatePetVisuals(this, newState);
+    }
+    //new
+    public void updatePetImage(Drawable drawable, PetManager.State state) {
+        if (drawable == null) return;
+
+        // Set the drawable on the ImageView
+        petStateImageView.setImageDrawable(drawable);
+
+        // Get the dimensions of the view and the image
+        int viewWidth = petStateImageView.getWidth();
+        int viewHeight = petStateImageView.getHeight();
+        if (viewWidth == 0 || viewHeight == 0) return; // Not laid out yet
+
+        int drawableWidth = drawable.getIntrinsicWidth();
+        int drawableHeight = drawable.getIntrinsicHeight();
+
+        // Calculate the scale factor to fit the image without distortion
+        float scale;
+        if (drawableWidth * viewHeight > viewWidth * drawableHeight) {
+            // Image is wider than the view
+            scale = (float) viewWidth / (float) drawableWidth;
+        } else {
+            // Image is taller than or same aspect as the view
+            scale = (float) viewHeight / (float) drawableHeight;
+        }
+
+        // Calculate the scaled image dimensions
+        float scaledWidth = drawableWidth * scale;
+        float scaledHeight = drawableHeight * scale;
+
+        // Determine the translation (movement) based on the state
+        float dx = 0; // Horizontal translation
+        float dy = (viewHeight - scaledHeight) * 0.5f; // Center vertically by default
+
+        switch (state) {
+            case FALLING_LEFT:
+            case SMACK_LEFT:
+                // Align to the left edge
+                dx = 0;
+                break;
+
+            case FALLING_RIGHT:
+            case SMACK_RIGHT:
+                // Align to the right edge
+                dx = viewWidth - scaledWidth;
+                break;
+
+            case IDLE:
+            case FALLING_VERTICAL:
+            default:
+                // Center horizontally
+                dx = (viewWidth - scaledWidth) * 0.5f;
+                break;
+        }
+
+        // Create and apply the matrix
+        Matrix matrix = new Matrix();
+        matrix.setScale(scale, scale);
+        matrix.postTranslate(Math.round(dx), Math.round(dy));
+        petStateImageView.setImageMatrix(matrix);
+    }
+
     private final Runnable updateImageRunnable = new Runnable() {
         @Override
         public void run() {
             if (petManager == null || binding == null) return;
 
             PetManager.State currentState = petManager.getState();
-            int imageResource = R.drawable.gator_idle01; // Default image
+            int imageResource; // Default will be handled inside the switch
 
             switch (currentState) {
                 case IDLE:
-                    imageResource = R.drawable.gator_idle01;
+                    // --- MODIFIED: Choose idle image based on last direction ---
+                    if (isFacingLeft) {
+                        imageResource = R.drawable.gator_idle_left;
+                    } else {
+                        // Assumes you have a 'gator_idle_right.png' in your drawable folder
+                        imageResource = R.drawable.gator_idle_right;
+                    }
                     break;
                 case FALLING_VERTICAL:
                     imageResource = R.drawable.gator_fall_vertical;
@@ -186,6 +312,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     break;
                 case SMACK_RIGHT:
                     imageResource = R.drawable.gator_wallsmack_right;
+                    break;
+                default:
+                    // Default to a known safe state in case of an unexpected enum value
+                    imageResource = R.drawable.gator_idle_left;
                     break;
             }
             binding.petStateImageView.setImageResource(imageResource);
@@ -302,4 +432,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // Not needed for this implementation, but required by the interface.
     }
+
+    private void hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            final WindowInsetsController insetsController = getWindow().getInsetsController();
+            if (insetsController != null) {            // Hides the status and navigation bars
+                insetsController.hide(WindowInsets.Type.systemBars());
+                // Makes the app fullscreen and allows gestures to temporarily reveal the bars
+                insetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            // For older Android versions (legacy approach)
+            // *** FIX: REMOVED THE INCORRECT PREFIX ***
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        }
+    }
+
 }
