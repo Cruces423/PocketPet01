@@ -44,12 +44,10 @@ app:layout_constraintTop_toBottomOf="@id/top_bar"
 app:layout_constraintBottom_toTopOf="@id/pet_name_container">
 
 <!-- The ImageView for the pet. Its container now correctly fills the space -->
-<ImageView
-    android:id="@+id/pet_state_image_view"
-    android:layout_width="200dp"
-    android:layout_height="200dp"
-    android:src="@drawable/gator_idle_left"
-    android:scaleType="matrix" />
+    <ImageView
+        android:id="@+id/pet_state_image_view"
+        android:layout_width="200dp"
+        android:layout_height="200dp" />
 
 </FrameLayout>
 

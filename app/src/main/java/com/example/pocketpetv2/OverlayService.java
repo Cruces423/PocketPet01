@@ -32,14 +32,11 @@ public class OverlayService extends Service implements SensorEventListener {
     private float initialTouchX;
     private float initialTouchY;
     private boolean isDragging = false;
-
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Handler gravityHandler = new Handler();
     private float sensorX, sensorY;
     private int screenWidth, screenHeight;
-    // --- End of gravity variables ---
-
 
     public OverlayService() {
     }

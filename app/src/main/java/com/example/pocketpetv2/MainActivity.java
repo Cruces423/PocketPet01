@@ -3,49 +3,88 @@ package com.example.pocketpetv2;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
+import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.dynamicanimation.animation.DynamicAnimation;
-import androidx.dynamicanimation.animation.FlingAnimation;
 
 import com.example.pocketpetv2.databinding.ActivityMainBinding;
 
-import android.graphics.Matrix;
-import android.graphics.drawable.Drawable;
-import android.widget.ImageView;
-
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, PetManager.PetStateListener {
 
     private ActivityMainBinding binding;
     private PetManager petManager;
     private Thread petManagerThread;
-    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+
     private SensorManager sensorManager;
     private Sensor accelerometer;
 
     private FrameLayout petContainer;
     private ImageView petStateImageView;
 
-    private FlingAnimation flingX;
-    private FlingAnimation flingY;
+    private final View.OnTouchListener petContainerTouchListener = new View.OnTouchListener() {
+        private boolean isDragging = false;
 
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            // ... (The entire onTouch method code goes here, exactly as it was)
+            float touchX = event.getX();
+            float touchY = event.getY();
+
+            if (petManager == null) return false;
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    float petX = petManager.getPositionX();
+                    float petY = petManager.getPositionY();
+                    int petWidth = petStateImageView.getWidth();
+                    int petHeight = petStateImageView.getHeight();
+
+                    if (touchX >= petX && touchX <= petX + petWidth &&
+                            touchY >= petY && touchY <= petY + petHeight) {
+                        isDragging = true;
+                        petManager.startDragging(touchX - (petWidth / 2f), touchY - (petHeight / 2f));
+                        return true;
+                    }
+                    return false;
+
+                case MotionEvent.ACTION_MOVE:
+                    if (isDragging) {
+                        int width = petStateImageView.getWidth();
+                        int height = petStateImageView.getHeight();
+                        petManager.updateDrag(touchX - (width / 2f), touchY - (height / 2f));
+                        return true;
+                    }
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (isDragging) {
+                        isDragging = false;
+                        petManager.stopDragging();
+                        return true;
+                    }
+                    break;
+            }
+            return false;
+        }
+    };
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
@@ -56,12 +95,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(binding.getRoot());
 
         hideSystemUI();
-
-        //start state machine
-        petManager = new PetManager();
-        petManagerThread = new Thread(petManager);
-        petManagerThread.start();
-
         setupButtons();
 
         petContainer = findViewById(R.id.pet_container);
@@ -73,65 +106,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         petContainer.post(() -> {
-            final float minX = 0;
-            final float maxX = petContainer.getWidth() - petStateImageView.getWidth();
-            final float minY = 0;
-            final float maxY = petContainer.getHeight() - petStateImageView.getHeight();
+            petManager = new PetManager();
+            petManager.setPetStateListener(this);
 
-            flingX = new FlingAnimation(petStateImageView, DynamicAnimation.X);
-            flingX.setMinValue(minX);
-            flingX.setMaxValue(maxX);
+            float minX = 0;
+            float maxX = petContainer.getWidth() - petStateImageView.getWidth();
+            float minY = 0;
+            float maxY = petContainer.getHeight() - petStateImageView.getHeight();
+            petManager.setBoundaries(minX, maxX, minY, maxY);
 
-            flingY = new FlingAnimation(petStateImageView, DynamicAnimation.Y);
-            flingY.setMinValue(minY);
-            flingY.setMaxValue(maxY);
+            float initialX = (minX + maxX) / 2;
+            petStateImageView.setX(initialX);
+            petStateImageView.setY(maxY);
 
-            //update listener here possibly
+            petStateImageView.setImageResource(R.drawable.gator_idle_left);
+
+            petManagerThread = new Thread(petManager);
+            petManagerThread.start();
         });
+
+        petContainer.setOnTouchListener(petContainerTouchListener);
     }
-
-    private final Runnable updateImageRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (petManager == null || binding == null) return;
-
-            PetManager.State currentState = petManager.getState();
-            int imageResource;
-
-            switch (currentState) {
-                case IDLE:
-                    imageResource = R.drawable.gator_idle_left;
-                    break;
-                case FALLING_VERTICAL:
-                    imageResource = R.drawable.gator_fall_vertical;
-                    break;
-                case FALLING_LEFT:
-                    imageResource = R.drawable.gator_fall_horizontal_left;
-                    break;
-                case FALLING_RIGHT:
-                    imageResource = R.drawable.gator_fall_horizontal_right;
-                    break;
-                case SMACK_LEFT:
-                    imageResource = R.drawable.gator_wallsmack_left;
-                    break;
-                case SMACK_RIGHT:
-                    imageResource = R.drawable.gator_wallsmack_right;
-                    break;
-                default:
-                    imageResource = R.drawable.gator_idle_left;
-                    break;
-            }
-            binding.petStateImageView.setImageResource(imageResource);
-
-            // Keep the image update loop running
-            uiHandler.postDelayed(this, 100);
-        }
-    };
 
     @Override
     protected void onResume() {
         super.onResume();
-        uiHandler.post(updateImageRunnable);
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
@@ -140,14 +139,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onPause() {
         super.onPause();
-        uiHandler.removeCallbacks(updateImageRunnable);
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
-        /*
-        if (flingX != null) flingX.cancel();
-        if (flingY != null) flingY.cancel();
-         */
     }
 
     @Override
@@ -162,13 +156,65 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         binding = null;
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER && petManager != null) {
+            petManager.updateSensorInput(event.values[0], event.values[1]);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+
+    @Override
+    public void onStateChanged(PetManager.State newState, boolean isFacingLeft) {
+        int imageResource;
+        switch (newState) {
+            case DRAGGING_VERTICAL:
+                imageResource = R.drawable.gator_fall_vertical;
+                break;
+            case DRAGGING_LEFT:
+                imageResource = R.drawable.gator_fall_horizontal_left;
+                break;
+            case DRAGGING_RIGHT:
+                imageResource = R.drawable.gator_fall_horizontal_right;
+                break;
+            case FALLING_VERTICAL:
+                imageResource = R.drawable.gator_fall_vertical;
+                break;
+            case FALLING_LEFT:
+                imageResource = R.drawable.gator_fall_horizontal_left;
+                break;
+            case FALLING_RIGHT:
+                imageResource = R.drawable.gator_fall_horizontal_right;
+                break;
+            case SMACK_LEFT:
+                imageResource = R.drawable.gator_wallsmack_left;
+                break;
+            case SMACK_RIGHT:
+                imageResource = R.drawable.gator_wallsmack_right;
+                break;
+            case IDLE:
+            default:
+                imageResource = isFacingLeft ? R.drawable.gator_idle_left : R.drawable.gator_idle_right;
+                break;
+        }
+        binding.petStateImageView.setImageResource(imageResource);
+    }
+
+    @Override
+    public void onPositionChanged(float newX, float newY) {
+        petStateImageView.setX(newX);
+        petStateImageView.setY(newY);
+    }
+
     private void setupButtons() {
         binding.buttonDeploy.setOnClickListener(v -> {
             if (Settings.canDrawOverlays(this)) {
                 Intent overlayIntent = new Intent(this, OverlayService.class);
                 startService(overlayIntent);
             } else {
-                // ask user for permission
                 Intent settingsIntent = new Intent(
                         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                         Uri.parse("package:" + getPackageName())
@@ -185,44 +231,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show()
         );
 
-        // The exit button from your layout
         binding.buttonExit.setOnClickListener(v -> finish());
 
-        // The pet name button from your layout
         binding.buttonPetName.setOnClickListener(v ->
                 Toast.makeText(this, "Pet name clicked", Toast.LENGTH_SHORT).show()
         );
-    }
-
-    public void updatePetImage(Drawable drawable, PetManager.State state) {
-        if (drawable == null) return;
-        petStateImageView.setImageDrawable(drawable);
-
-
-        int viewWidth = petStateImageView.getWidth();
-        int viewHeight = petStateImageView.getHeight();
-        if (viewWidth == 0 || viewHeight == 0) return;
-
-        int drawableWidth = drawable.getIntrinsicWidth();
-        int drawableHeight = drawable.getIntrinsicHeight();
-
-        float scale;
-        if (drawableWidth * viewHeight > viewWidth * drawableHeight) {
-            scale = (float) viewWidth / (float) drawableWidth;
-        } else {
-            scale = (float) viewHeight / (float) drawableHeight;
-        }
-
-        float scaledWidth = drawableWidth * scale;
-        float scaledHeight = drawableHeight * scale;
-
-        float dx = 0;
-        float dy = (viewHeight - scaledHeight) * 0.5f;
-
-        Matrix matrix = new Matrix();
-        matrix.setScale(scale, scale);
-        matrix.postTranslate(Math.round(dx), Math.round(dy));
-        petStateImageView.setImageMatrix(matrix);
     }
 
     private void hideSystemUI() {
@@ -242,10 +255,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             | View.SYSTEM_UI_FLAG_FULLSCREEN);
         }
     }
-
-    //unfortunately required
-    @Override
-    public void onSensorChanged(android.hardware.SensorEvent event) {}
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 }
+
