@@ -43,4 +43,5 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation("androidx.dynamicanimation:dynamicanimation:1.0.0")
+    implementation("androidx.work:work-runtime:2.9.0")
 }

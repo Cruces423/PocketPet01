@@ -30,6 +30,12 @@
             </intent-filter>
         </activity>
 
-        </application>
+        <activity
+            android:name=".CustomizeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PocketPetV2.Fullscreen"
+            android:windowSoftInputMode="adjustResize" />
+
+    </application>
 
 </manifest>

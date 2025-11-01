@@ -6,7 +6,6 @@
     android:background="@android:color/black"
     tools:context=".MainActivity">
 
-    <!-- Top bar -->
     <LinearLayout
         android:id="@+id/top_bar"
         android:layout_width="0dp"
@@ -26,14 +25,20 @@
         android:layout_marginBottom="8dp"
         android:layout_weight="1"
         android:text="@string/exit" />
-    <Space
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_weight="2"/> <!-- FIX: Increased weight to push button left -->
+        <ProgressBar
+            android:id="@+id/hunger_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="20dp"
+        android:layout_weight="2"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:max="100"
+        android:progress="100"
+        android:progressDrawable="@drawable/custom_progressbar" />
 
 </LinearLayout>
 
-    <!-- This is the container for your pet -->
 <FrameLayout
 android:id="@+id/pet_container"
 android:layout_width="0dp"
@@ -43,15 +48,15 @@ app:layout_constraintEnd_toEndOf="parent"
 app:layout_constraintTop_toBottomOf="@id/top_bar"
 app:layout_constraintBottom_toTopOf="@id/pet_name_container">
 
-<!-- The ImageView for the pet. Its container now correctly fills the space -->
     <ImageView
         android:id="@+id/pet_state_image_view"
         android:layout_width="200dp"
-        android:layout_height="200dp" />
+        android:layout_height="200dp"
+        android:layout_gravity="center"
+        app:srcCompat="@drawable/gator_idle_left" />
 
 </FrameLayout>
 
-    <!-- Pet Name Button Container -->
 <LinearLayout
 android:id="@+id/pet_name_container"
 android:layout_width="0dp"
@@ -72,7 +77,6 @@ android:layout_marginStart="8dp"
 
     </LinearLayout>
 
-    <!-- Bottom Buttons -->
 <LinearLayout
 android:id="@+id/bottom_buttons"
 android:layout_width="0dp"
@@ -104,14 +108,14 @@ android:layout_weight="1"
 android:text="@string/customize"/>
 
 <Button
-android:id="@+id/button_settings"
+android:id="@+id/button_feed"
 android:layout_width="0dp"
 android:layout_height="wrap_content"
 android:layout_marginEnd="8dp"
 android:layout_marginTop="8dp"
 android:layout_marginBottom="8dp"
 android:layout_weight="1"
-android:text="@string/settings"/>
+android:text="@string/feed"/>
     </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

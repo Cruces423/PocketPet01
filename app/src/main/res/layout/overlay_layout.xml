@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/overlay_container"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="#80000000" >
+    android:layout_height="wrap_content">
 
     <ImageView
         android:id="@+id/overlay_pet_image"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@mipmap/ic_launcher"
-        android:contentDescription="Your Pet"/>
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@drawable/gator_idle_left" />
 
     <Button
         android:id="@+id/button_stop_overlay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Stop"/>
-</LinearLayout>
+        android:text="Stop"
+        android:layout_gravity="bottom|center_horizontal" />
+
+</FrameLayout>
+
