@@ -36,6 +36,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private FrameLayout petContainer;
     private ImageView petStateImageView;
 
+    private int gatorIdleLeft;
+    private int gatorIdleRight;
+    private int gatorFallVertical;
+    private int gatorFallHorizontalLeft;
+    private int gatorFallHorizontalRight;
+    private int gatorWallSmackLeft;
+    private int gatorWallSmackRight;
+
+    private int catIdleLeft;
+    private int catIdleRight;
+    private int catFallVertical;
+    private int catFallHorizontalLeft;
+    private int catFallHorizontalRight;
+    private int catWallSmackLeft;
+    private int catWallSmackRight;
+
+    private int currentIdleLeft;
+    private int currentIdleRight;
+    private int currentFallVertical;
+    private int currentFallHorizontalLeft;
+    private int currentFallHorizontalRight;
+    private int currentWallSmackLeft;
+    private int currentWallSmackRight;
+
+
     private final View.OnTouchListener petContainerTouchListener = new View.OnTouchListener() {
         private boolean isDragging = false;
 
@@ -93,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             getSupportActionBar().hide();
         }
         setContentView(binding.getRoot());
+
+        initializeDrawables();
 
         hideSystemUI();
         setupButtons();
@@ -167,37 +194,64 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 
+    private void initializeDrawables() {
+        gatorIdleLeft = R.drawable.gator_idle_left;
+        gatorIdleRight = R.drawable.gator_idle_right;
+        gatorFallVertical = R.drawable.gator_fall_vertical;
+        gatorFallHorizontalLeft = R.drawable.gator_fall_horizontal_left;
+        gatorFallHorizontalRight = R.drawable.gator_fall_horizontal_right;
+        gatorWallSmackLeft = R.drawable.gator_wallsmack_left;
+        gatorWallSmackRight = R.drawable.gator_wallsmack_right;
+
+        catIdleLeft = R.drawable.cat_idle_left;
+        catIdleRight = R.drawable.cat_idle_right;
+        catFallVertical = R.drawable.cat_falling_vertical;
+        catFallHorizontalLeft = R.drawable.cat_falling_left;
+        catFallHorizontalRight = R.drawable.cat_falling_right;
+        catWallSmackLeft = R.drawable.cat_smack_left;
+        catWallSmackRight = R.drawable.cat_smack_right;
+
+        //default
+        currentIdleRight = gatorIdleRight;
+        currentIdleLeft = gatorIdleLeft;
+        currentFallVertical = gatorFallVertical;
+        currentFallHorizontalLeft = gatorFallHorizontalLeft;
+        currentFallHorizontalRight = gatorFallHorizontalRight;
+        currentWallSmackLeft = gatorWallSmackLeft;
+        currentWallSmackRight = gatorWallSmackRight;
+    }
+
     @Override
     public void onStateChanged(PetManager.State newState, boolean isFacingLeft) {
         int imageResource;
         switch (newState) {
             case DRAGGING_VERTICAL:
-                imageResource = R.drawable.gator_fall_vertical;
+                imageResource = currentFallVertical;
                 break;
             case DRAGGING_LEFT:
-                imageResource = R.drawable.gator_fall_horizontal_left;
+                imageResource = currentFallHorizontalLeft;
                 break;
             case DRAGGING_RIGHT:
-                imageResource = R.drawable.gator_fall_horizontal_right;
+                imageResource = currentFallHorizontalRight;
                 break;
             case FALLING_VERTICAL:
-                imageResource = R.drawable.gator_fall_vertical;
+                imageResource = currentFallVertical;
                 break;
             case FALLING_LEFT:
-                imageResource = R.drawable.gator_fall_horizontal_left;
+                imageResource = currentFallHorizontalLeft;
                 break;
             case FALLING_RIGHT:
-                imageResource = R.drawable.gator_fall_horizontal_right;
+                imageResource = currentFallHorizontalRight;
                 break;
             case SMACK_LEFT:
-                imageResource = R.drawable.gator_wallsmack_left;
+                imageResource = currentWallSmackLeft;
                 break;
             case SMACK_RIGHT:
-                imageResource = R.drawable.gator_wallsmack_right;
+                imageResource = currentWallSmackRight;
                 break;
             case IDLE:
             default:
-                imageResource = isFacingLeft ? R.drawable.gator_idle_left : R.drawable.gator_idle_right;
+                imageResource = isFacingLeft ? currentIdleLeft : currentIdleRight;
                 break;
         }
         binding.petStateImageView.setImageResource(imageResource);
@@ -223,9 +277,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        binding.buttonCustomize.setOnClickListener(v ->
-                Toast.makeText(this, "Customize clicked", Toast.LENGTH_SHORT).show()
-        );
+        binding.buttonCustomize.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CustomizeActivity.class);
+            startActivity(intent);
+        });
 
         binding.buttonSettings.setOnClickListener(v ->
                 Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show()
@@ -233,9 +288,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         binding.buttonExit.setOnClickListener(v -> finish());
 
+        /*
         binding.buttonPetName.setOnClickListener(v ->
                 Toast.makeText(this, "Pet name clicked", Toast.LENGTH_SHORT).show()
         );
+         */
     }
 
     private void hideSystemUI() {
@@ -253,6 +310,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                             | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        }
+    }
+
+    public void changePet(String PetName) {
+        switch (PetName) {
+            case "Gator":
+                currentIdleLeft = gatorIdleLeft;
+                currentIdleRight = gatorIdleRight;
+                currentFallVertical = gatorFallVertical;
+                currentFallHorizontalLeft = gatorFallHorizontalLeft;
+                currentFallHorizontalRight = gatorFallHorizontalRight;
+                currentWallSmackLeft = gatorWallSmackLeft;
+                currentWallSmackRight = gatorWallSmackRight;
+                break;
+            case("Cat"):
+                currentIdleLeft = catIdleLeft;
+                currentIdleRight = catIdleRight;
+                currentFallVertical = catFallVertical;
+                currentFallHorizontalLeft = catFallHorizontalLeft;
+                currentFallHorizontalRight = catFallHorizontalRight;
+                currentWallSmackLeft = catWallSmackLeft;
+                currentWallSmackRight = catWallSmackRight;
+                break;
         }
     }
 }
