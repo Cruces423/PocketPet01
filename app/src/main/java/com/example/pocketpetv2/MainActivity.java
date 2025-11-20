@@ -133,11 +133,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void setupButtons() {
         binding.buttonExit.setOnClickListener(v -> finish());
-        binding.petNameContainer.setOnClickListener(v -> {
-            PetData.feedPet(60);
-            updateHungerBar();
-            Toast.makeText(this, "You fed your pet!", Toast.LENGTH_SHORT).show();
+
+        // Make the pet's name button open the customize screen
+        binding.buttonCustomize.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CustomizeActivity.class);
+            startActivity(intent);
         });
+
+        // Deploy the pet as an overlay
         binding.buttonDeploy.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
                 startService(new Intent(this, OverlayService.class));
@@ -146,18 +149,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName())));
             }
         });
-        binding.buttonCustomize.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, CustomizeActivity.class);
-            startActivity(intent);
-        });
+
+        // Keep the original feed button functionality
         binding.buttonFeed.setOnClickListener(v -> {
             PetData.feedPet(120);
-
             updateHungerBar();
-
             Toast.makeText(this, "You fed your pet!", Toast.LENGTH_SHORT).show();
         });
     }
+
 
     private void hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
